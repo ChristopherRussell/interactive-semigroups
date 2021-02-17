@@ -139,6 +139,37 @@ export class MyScene extends Phaser.Scene {
         }
     }
 
+    drawHClasses() {
+        if (this.state == 'H') {
+            return;
+        }
+        this.textPrefix = '<H-class>: ';
+        this.state = 'H';
+        let y = 50,
+            x = 0,
+            nrLClasses = 0,
+            nrRClasses = 0;
+        for (var i = 0; i < this.semigroup.D.length; i++) { // for each D-class
+            nrLClasses = this.semigroup.L[i].length;
+            nrRClasses = this.semigroup.R[i].length;
+            this.semigroup.boxes.H[i] = [];
+            for (var j = 0; j < nrLClasses; j++) {
+                x = -(nrRClasses - 1) * 50;
+                for (var k = 0; k < nrRClasses; k++) {
+                    this.semigroup.boxes.H[i][j * nrRClasses + k] 
+                        = this.add.rectangle(400 + x, y, 100, 100, '0xA8A8A8');
+                    this.semigroup.boxes.H[i][j * nrRClasses + k].setStrokeStyle(5, '0x000000', 0.1);
+                    this.semigroup.boxes.H[i][j * nrRClasses + k].setInteractive();
+                    this.semigroup.boxes.H[i][j * nrRClasses + k].elements
+                        = this.semigroup.H[i][j * nrRClasses + k];
+                    x += 100;
+                }
+                y += 100;
+            }
+            y += 100;
+        }
+    }
+
     highlightIdeal(ideal, state) {
         switch (state) {
             case "D":
@@ -150,11 +181,15 @@ export class MyScene extends Phaser.Scene {
             case "L":
                 this.hightlight(ideal, [].concat.apply([], this.semigroup.boxes.L));
                 break;
+            case "H":
+                this.hightlight(ideal, [].concat.apply([], this.semigroup.boxes.H));
+                break;
         }
     }
 
     hightlight(ideal, list) {
         for (var i = 0; i < list.length; i++) {
+            list[i].setFillStyle('0xA8A8A8');
             if (list[i].elements.some( e => ideal.includes(e) )) {
                 list[i].setFillStyle('0x6E1718');
             }
@@ -189,6 +224,9 @@ class Hotkeys {
         this.i = keyboardPlugin.addKey('I', true, false);
 
         this.d.on('down', () => { this.scene.drawDClasses() });
+        this.r.on('down', () => { this.scene.drawRClasses() });
+        this.l.on('down', () => { this.scene.drawLClasses() });
+        this.h.on('down', () => { this.scene.drawHClasses() });
         this.i.on('down', () => {
             console.log(this.scene.idealCounter);
             console.log(this.scene.semigroup.ideals, this.scene.state);
