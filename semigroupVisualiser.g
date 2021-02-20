@@ -1,21 +1,23 @@
 # We will be storing D/R/L/H-classes as lists of pointers to the position of their elements
 # in Elements(S)
-S := FullTransformationMonoid(3);;
+S := FullTransformationMonoid(4);;
+degree := DegreeOfTransformationSemigroup(S);;
 D := List(GreensDClasses(S), Elements);;
-D_ranks := List(D, d -> RankOfTransformation(Representative(d)));
+D_ranks := List(D, d -> RankOfTransformation(Representative(d), degree));
 D := List(D, d -> List(d, e -> Position(Elements(S), e)));;
 R := List(GreensDClasses(S), GreensRClasses);;
-R_kernels := List(R, d -> List(d, r -> KernelOfTransformation(Representative(r))));
+R_kernels := List(R, d -> List(d, r -> KernelOfTransformation(Representative(r), degree)));
 R := List(R, d -> List(d, r -> List(r, e -> Position(Elements(S), e))));;
 L := List(GreensDClasses(S), GreensLClasses);;
-L_images := List(L, d -> List(d, l -> ImageSetOfTransformation(Representative(l))));
+L_images := List(L, d -> List(d, l -> ImageSetOfTransformation(Representative(l), degree)));
 L := List(L, d -> List(d, l -> List(l, e -> Position(Elements(S), e))));;
 
 
 # Now we store H-classes in a particular order so that if we fill out the rows of a
 # D-class diagram from left to right and top to bottom the H-classes with the same
 # image set will be in the same column and those with the same kernel will be in the
-# same row.
+# same row. We also create a corresponding list with the structure description of
+# the group H-classes.
 compareHClasses := function(h1, h2, kers, ims)
     local im1, im2, ker1, ker2;
     im1  := ImageSetOfTransformation(Representative(h1));
@@ -34,6 +36,14 @@ for i in [1 .. Length(D)] do
     end;
     Sort(H[i], comp);
 od;
+structure := function(h)
+    if IsGroupHClass(h) then
+        return StructureDescription(h);
+    else
+        return "";
+    fi;
+end;
+H_groups := List(H, d -> List(d, structure));
 H := List(H, d -> List(d, h -> List(h, e -> Position(Elements(S), e))));
 
 # store ideals as lists of pointers to the elements they contain
@@ -47,14 +57,15 @@ elm := List(Elements(S), e -> ImageListOfTransformation(e, 3));;
 
 # Exporting semigroup data as a javascript object.
 f := IO_File("/Users/crussell/Desktop/Semigroup_Visualiser/semigroupData.js", "w");;
-out := Concatenation("export let semigroup = { D:", String(D),
-       ", R:", String(R),
-       ", L:", String(L),
-       ", H:", String(H),
-       ", elm:", String(elm),
-       ", D_ranks:", String(D_ranks),
-       ", R_kernels:", String(R_kernels),
-       ", L_images:", String(L_images),
+out := Concatenation("export let semigroup = { D:", String(D), "\n",
+       ", R:", String(R), "\n",
+       ", L:", String(L), "\n",
+       ", H:", String(H), "\n",
+       ", elm:", String(elm), "\n",
+       ", D_ranks:", String(D_ranks), "\n",
+       ", R_kernels:", String(R_kernels), "\n",
+       ", L_images:", String(L_images), "\n",
+       ", H_groups:", String(H_groups), "\n",
        ", ideals:", String(ideals),
        " }");
 IO_Write(f, out);;

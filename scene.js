@@ -8,23 +8,31 @@ export class MyScene extends Phaser.Scene {
     }
 
     create() {
+        // main camera for viewing eggbox diagram, set up so that the
+        // whole diagram will be visible
         this.cameras.main.setSize(800, 700);
         let totalNrLClasses = 0;
         this.semigroup.L.forEach( e => totalNrLClasses += e.length );
         let expectedHeight = totalNrLClasses * 100 + this.semigroup.D.length * 100;
         this.cameras.main.setZoom(700 / expectedHeight);
         this.cameras.main.setScroll(0, (expectedHeight - 700) / 2);
+
+        // console camera
         this.cameras.add(0, 700, 800, 100).setScroll(-6000,-6000);
+
+        // console text
         this.text = this.add.text(-5990, -5990, "<console>");
         this.text.setWordWrapWidth(780);
         this.hotkeys = new Hotkeys(this.input.keyboard);
-        // this.input.on('gameobjectdown', (pointer, gameObject) => {console.log(gameObject.elements)} );
+
+        // todo refine these 'on' events to box elements using Phaser Groups
+        // click and hover events for boxes
         this.input.on('gameobjectdown', (pointer, gameObject) =>
-            {this.text.setText(this.textPrefix + String(this.classElements(gameObject.elements)))});
+            {this.text.setText(this.textPrefix + String(this.stringElements(gameObject.elements)))});
         this.input.on('gameobjectover', (pointer, gameObject) =>
             {gameObject.setFillStyle('0x696969')});
         this.input.on('gameobjectout', (pointer, gameObject) => 
-            {gameObject.setFillStyle('0xA8A8A8')});
+            {gameObject.setFillStyle(gameObject.color)});
     }
 
     update() {
@@ -50,50 +58,34 @@ export class MyScene extends Phaser.Scene {
         {            
             this.cameras.main.zoom -= 0.01;
         }
-        //  else if (this.hotkeys.d.isDown)
-        // {
-        //     this.drawDClasses();
-        // } else if (this.hotkeys.r.isDown)
-        // {            
-        //     this.drawRClasses();
-        // } else if (this.hotkeys.l.isDown)
-        // {            
-        //     this.drawLClasses();
-        // } else if (this.hotkeys.h.isDown)
-        // {            
-        //     this.drawHClasses();
-        // } else if (this.hotkeys.i.isDown)
-        // {
-        //     this.highlightIdeal(this.semigroup.ideals[this.idealCounter], this.state);
-        //     this.idealCounter = (this.idealCounter + 1) % this.semigroup.ideals.length;
-        // }
     }
 
     drawDClasses() {
-        if (this.state == 'D') {
+        this.changeState('D');
+        if (this.D != undefined) {
+            this.D.setVisible(true);
             return;
         }
-        this.state = 'D';
-        this.textPrefix = '<D-class>: ';
+        this.D = this.add.group();
         let y = 0;
         for (var i = 0; i < this.semigroup.D.length; i++) {
             let nrRClasses = this.semigroup.R[i].length,
                 nrLClasses = this.semigroup.L[i].length;
             y += nrLClasses * 50;
-            this.semigroup.boxes.D[i] = this.add.rectangle(400, y, nrRClasses * 100, nrLClasses * 100, '0xA8A8A8');
-            this.semigroup.boxes.D[i].setStrokeStyle(5, '0x000000', 0.1);
-            this.semigroup.boxes.D[i].setInteractive();
-            this.semigroup.boxes.D[i].elements = this.semigroup.D[i];
+            this.semigroup.boxes.D[i] = new GreensXClass(
+                this.semigroup.D[i], this.semigroup.D_ranks[i], false, this.D,
+                this, 400, y, nrRClasses * 100, nrLClasses * 100, '0xA8A8A8');
             y += nrLClasses * 50 + 100;
         }
     }
 
     drawRClasses() {
-        if (this.state == 'R') {
+        this.changeState('R');
+        if (this.R != undefined) {
+            this.R.setVisible(true);
             return;
         }
-        this.state = 'R';
-        this.textPrefix = '<R-class>: ';
+        this.R = this.add.group();
         let y = 0,
             x = 0,
             nrLClasses = 0,
@@ -105,10 +97,9 @@ export class MyScene extends Phaser.Scene {
             x = 400 + (nrRClasses - 1) * 50;
             this.semigroup.boxes.R[i] = [];
             for (var j = 0; j < this.semigroup.R[i].length; j++) {
-                this.semigroup.boxes.R[i][j] = this.add.rectangle(x, y, 100, nrLClasses * 100, '0xA8A8A8');
-                this.semigroup.boxes.R[i][j].setStrokeStyle(5, '0x000000', 0.1);
-                this.semigroup.boxes.R[i][j].setInteractive();
-                this.semigroup.boxes.R[i][j].elements = this.semigroup.R[i][j];
+                this.semigroup.boxes.R[i][j] = new GreensXClass(
+                    this.semigroup.R[i][j], this.semigroup.R_kernels[i][j],
+                    true, this.R, this, x, y, 100, nrLClasses * 100, '0xA8A8A8');
                 x -= 100;
             }
             y += nrLClasses * 50 + 100;
@@ -116,11 +107,12 @@ export class MyScene extends Phaser.Scene {
     }
 
     drawLClasses() {
-        if (this.state == 'L') {
+        this.changeState('L');
+        if (this.L != undefined) {
+            this.L.setVisible(true);
             return;
         }
-        this.textPrefix = '<L-class>: ';
-        this.state = 'L';
+        this.L = this.add.group();
         let y = 50,
             nrLClasses = 0,
             nrRClasses = 0;
@@ -129,10 +121,9 @@ export class MyScene extends Phaser.Scene {
             nrRClasses = this.semigroup.R[i].length;
             this.semigroup.boxes.L[i] = [];
             for (var j = 0; j < this.semigroup.L[i].length; j++) {
-                this.semigroup.boxes.L[i][j] = this.add.rectangle(400, y, nrRClasses * 100, 100, '0xA8A8A8');
-                this.semigroup.boxes.L[i][j].setStrokeStyle(5, '0x000000', 0.1);
-                this.semigroup.boxes.L[i][j].setInteractive();
-                this.semigroup.boxes.L[i][j].elements = this.semigroup.L[i][j];
+                this.semigroup.boxes.L[i][j] = new GreensXClass(
+                    this.semigroup.L[i][j], this.semigroup.L_images[i][j],
+                    false, this.L, this, 400, y, nrRClasses * 100, 100, '0xA8A8A8');
                 y+= 100;
             }
             y += 100;
@@ -140,11 +131,12 @@ export class MyScene extends Phaser.Scene {
     }
 
     drawHClasses() {
-        if (this.state == 'H') {
+        this.changeState('H');
+        if (this.H != undefined) {
+            this.H.setVisible(true);
             return;
         }
-        this.textPrefix = '<H-class>: ';
-        this.state = 'H';
+        this.H = this.add.group();
         let y = 50,
             x = 0,
             nrLClasses = 0,
@@ -157,11 +149,9 @@ export class MyScene extends Phaser.Scene {
                 x = -(nrRClasses - 1) * 50;
                 for (var k = 0; k < nrRClasses; k++) {
                     this.semigroup.boxes.H[i][j * nrRClasses + k] 
-                        = this.add.rectangle(400 + x, y, 100, 100, '0xA8A8A8');
-                    this.semigroup.boxes.H[i][j * nrRClasses + k].setStrokeStyle(5, '0x000000', 0.1);
-                    this.semigroup.boxes.H[i][j * nrRClasses + k].setInteractive();
-                    this.semigroup.boxes.H[i][j * nrRClasses + k].elements
-                        = this.semigroup.H[i][j * nrRClasses + k];
+                        = new GreensXClass(this.semigroup.H[i][j * nrRClasses + k],
+                            this.semigroup.H_groups[i][j * nrRClasses + k], false,
+                            this.H, this, 400 + x, y, 100, 100, '0xA8A8A8');
                     x += 100;
                 }
                 y += 100;
@@ -190,13 +180,15 @@ export class MyScene extends Phaser.Scene {
     hightlight(ideal, list) {
         for (var i = 0; i < list.length; i++) {
             list[i].setFillStyle('0xA8A8A8');
+            list[i].color = "0xA8A8A8";
             if (list[i].elements.some( e => ideal.includes(e) )) {
                 list[i].setFillStyle('0x6E1718');
+                list[i].color = "0x6E1718";
             }
         }
     }
 
-    classElements(c) {
+    stringElements(c) {
         let out = "[";
         for (var i = 0; i < c.length; i++) {
             if (i != 0) { out += ", " }
@@ -204,6 +196,31 @@ export class MyScene extends Phaser.Scene {
         }
         out += "]";
         return out;
+    }
+
+    changeState(state) {
+        if (this.state == state) {
+            return;
+        }
+        if (this.state != 'empty') {
+            switch (this.state) {
+                case 'D':
+                    this.D.setVisible(false);
+                    break;
+                case 'R':
+                    this.R.setVisible(false); 
+                    break;
+                case 'L':
+                    this.L.setVisible(false);
+                    break;
+                case 'H':
+                    this.H.setVisible(false);
+                    break;
+            }
+        }
+        this.state = state;
+        this.textPrefix = '<' + state + '-class>: ';
+        this.idealCounter = 0;
     }
 }
 
@@ -223,15 +240,46 @@ class Hotkeys {
         this.w = keyboardPlugin.addKey('W', true, false);
         this.i = keyboardPlugin.addKey('I', true, false);
 
+        // controls
         this.d.on('down', () => { this.scene.drawDClasses() });
         this.r.on('down', () => { this.scene.drawRClasses() });
         this.l.on('down', () => { this.scene.drawLClasses() });
         this.h.on('down', () => { this.scene.drawHClasses() });
         this.i.on('down', () => {
-            console.log(this.scene.idealCounter);
-            console.log(this.scene.semigroup.ideals, this.scene.state);
             this.scene.highlightIdeal(this.scene.semigroup.ideals[this.scene.idealCounter], this.scene.state);
             this.scene.idealCounter = (this.scene.idealCounter + 1) % this.scene.semigroup.ideals.length;
         });
     }
+}
+
+class GreensXClass extends Phaser.GameObjects.Rectangle {
+    constructor(elements, label, isRClass, phaserGroup, ...args) {
+        super(...args);
+        this.scene.add.existing(this);
+        this.setStrokeStyle(5, '0x000000', 0.2);
+        this.color = "0xA8A8A8";
+        this.setInteractive();
+        this.elements = elements;
+        this.text = this.scene.add.text(this.x, this.y, "", { fontSize: '30px', align: 'center' });
+        if (isRClass) {
+            this.text.setText(stringKernel(label));
+            this.text.setX(this.text.x + this.text.height / 2);
+            this.text.setY(this.text.y - this.text.width / 2);
+            this.text.setAngle(90);
+        } else {
+            this.text.setText(String(label));
+            this.text.setX(this.text.x - this.text.width / 2);
+            this.text.setY(this.text.y - this.text.height / 2);
+        }
+        phaserGroup.addMultiple([this, this.text]);
+    }
+}
+
+function stringKernel(list) {
+    let out = "";
+    for (var i = 0; i < list.length; i++) {
+        if (i != 0) { out += "|" }
+        out += String(list[i]);
+    }
+    return out;
 }
