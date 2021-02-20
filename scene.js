@@ -148,7 +148,7 @@ export class MyScene extends Phaser.Scene {
             for (var j = 0; j < nrLClasses; j++) {
                 x = -(nrRClasses - 1) * 50;
                 for (var k = 0; k < nrRClasses; k++) {
-                    this.semigroup.boxes.H[i][j * nrRClasses + k] 
+                    this.semigroup.boxes.H[i][j * nrRClasses + k]
                         = new GreensXClass(this.semigroup.H[i][j * nrRClasses + k],
                             this.semigroup.H_groups[i][j * nrRClasses + k], false,
                             this.H, this, 400 + x, y, 100, 100, '0xA8A8A8');
@@ -160,30 +160,34 @@ export class MyScene extends Phaser.Scene {
         }
     }
 
-    highlightIdeal(ideal, state) {
-        switch (state) {
-            case "D":
-                this.hightlight(ideal, this.semigroup.boxes.D);
-                break;
-            case "R":
-                this.hightlight(ideal, [].concat.apply([], this.semigroup.boxes.R));
-                break;
-            case "L":
-                this.hightlight(ideal, [].concat.apply([], this.semigroup.boxes.L));
-                break;
-            case "H":
-                this.hightlight(ideal, [].concat.apply([], this.semigroup.boxes.H));
-                break;
+    clearBoxColours() {
+        let boxes = this.semigroup.boxes[this.state];
+        if (this.state == "D") { 
+            boxes = [boxes]
+        };
+
+        for (var d of boxes) {
+            for (var box of d) {
+                box.setFillStyle('0xA8A8A8');
+                box.color = "0xA8A8A8";
+            }
         }
     }
 
-    hightlight(ideal, list) {
-        for (var i = 0; i < list.length; i++) {
-            list[i].setFillStyle('0xA8A8A8');
-            list[i].color = "0xA8A8A8";
-            if (list[i].elements.some( e => ideal.includes(e) )) {
-                list[i].setFillStyle('0x6E1718');
-                list[i].color = "0x6E1718";
+    highlightIdeal() {
+        let boxes = this.semigroup.boxes[this.state];
+        if (this.state == "D") { 
+            boxes = [boxes]
+        };
+
+        this.clearBoxColours();
+
+        for (var d of boxes) {
+            for (var box of d) {
+                if (box.elements.some( e => this.semigroup.ideals[this.idealCounter].includes(e) )) {
+                    box.setFillStyle('0x6E1718');
+                    box.color = "0x6E1718";
+                }
             }
         }
     }
@@ -203,24 +207,12 @@ export class MyScene extends Phaser.Scene {
             return;
         }
         if (this.state != 'empty') {
-            switch (this.state) {
-                case 'D':
-                    this.D.setVisible(false);
-                    break;
-                case 'R':
-                    this.R.setVisible(false); 
-                    break;
-                case 'L':
-                    this.L.setVisible(false);
-                    break;
-                case 'H':
-                    this.H.setVisible(false);
-                    break;
-            }
+            this[this.state].setVisible(false);
         }
         this.state = state;
         this.textPrefix = '<' + state + '-class>: ';
         this.idealCounter = 0;
+        this.clearBoxColours();
     }
 }
 
