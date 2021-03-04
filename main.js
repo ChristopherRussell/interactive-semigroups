@@ -1,13 +1,13 @@
-import { MyScene } from './scene.js'
-import { semigroup } from './semigroupData.js'
+import { BaseScene } from './baseScene.js'
+import { semigroupData } from './semigroupData.js'
 
-let visualiser = new MyScene('myScene', semigroup);
+let main = new BaseScene('main', semigroupData);
 
 let gameConfig = { 
     type: Phaser.AUTO,
-    width: 800,
-    height: 800,
-    scene: [visualiser],
+    width: 2000,
+    height: 1500,
+    scene: [main],
     backgroundColor: "0xB0B553"
 };
 
